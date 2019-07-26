@@ -50,9 +50,9 @@ A few Pre-Reqs need to be met and are documented in the Reference Architecture a
     sudo subscription-manager repos \
     --enable="rhel-7-server-rpms" \
     --enable="rhel-7-server-extras-rpms" \
-    --enable="rhel-7-server-ose-3.9-rpms" \
+    --enable="rhel-7-server-ose-3.11-rpms" \
     --enable="rhel-7-fast-datapath-rpms" \
-    --enable="rhel-7-server-ansible-2.5-rpms"
+    --enable="rhel-7-server-ansible-2.6-rpms"
 
     sudo yum -y install ansible atomic-openshift-utils git
 
@@ -62,7 +62,7 @@ As of now a fix for deployging multiple OCS clusters is only available by clonin
  2. Clone this repository
 
  ```
- git clone https://github.com/hornjason/ansible-ocp-azure.git; cd ansible-ocp-azure
+ git clone https://github.com/GeraldSP/ansible-ocp-azure.git; cd ansible-ocp-azure
  ```
  3.  Install Azure CLI,  using playbook included or manually following above directions.
  ```
