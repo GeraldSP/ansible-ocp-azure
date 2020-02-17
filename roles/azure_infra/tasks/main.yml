@@ -15,5 +15,5 @@
 - name: Azure | Import bastion.yml
   include_tasks: bastion.yml
 
-- name: Azure | Import create_inventory.yaml
-  include_tasks: create_inventory.yaml
+- name: Azure | Import create_inventory.yml
+  include_tasks: create_inventory.yml

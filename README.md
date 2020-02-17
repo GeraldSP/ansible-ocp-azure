@@ -17,7 +17,7 @@ Master Nodes | ocp-master-# | 3 | Standard_D4s_v3 | 4 | 16
 Infra Nodes | ocp-infra-# | 3 | Standard_D4s_v3 | 4 | 16   
 App Nodes | ocp-app-# | 3 | Standard_D2S_v3 | 2 | 8  
 Bastion | bastion | 1 | Standard_D1 | 1 | 3.5
-Total | | 13 | | 55 | 219.5Gb
+Total | | 10 | | 11 | 43.5Gb
 
 
 VM sizes can be configured from defaults by changing the following variables, if the sizes chosen are below minimum OpenShift requirements deployment checks will fail.
@@ -39,10 +39,10 @@ az vm list-usage --location westus --output table
 ## Pre-Reqs
 
 Reqs
-A few Pre-Reqs need to be met and are documented in the Reference Architecture already.  **Ansible 2.5 is required**, the ansible control host running the deployment needs to be registered and subscribed to `rhel-7-server-ansible-2.5-rpms`.  Creating a [Service Principal](https://access.redhat.com/documentation/en-us/reference_architectures/2018/html-single/deploying_and_managing_openshift_3.9_on_azure/#service_principal) is documented as well as setting up the Azure CLI.  Currently the Azure CLI is setup on the ansible control host running the deployment using the playbook `azure_cli.yml` or by following instructions here, [Azure CLI Setup](https://docs.microsoft.com/en-us/cli/azure/create-an-azure-service-principal-azure-cli?toc=%2Fazure%2Fazure-resource-manager%2Ftoc.json&view=azure-cli-latest).
+A few Pre-Reqs need to be met and are documented in the Reference Architecture already.  **Ansible 2.6 is required**, the ansible control host running the deployment needs to be registered and subscribed to `rhel-7-server-ansible-2.6-rpms`.  Creating a [Service Principal](https://access.redhat.com/documentation/en-us/reference_architectures/2018/html-single/deploying_and_managing_openshift_3.9_on_azure/#service_principal) is documented as well as setting up the Azure CLI.  Currently the Azure CLI is setup on the ansible control host running the deployment using the playbook `azure_cli.yml` or by following instructions here, [Azure CLI Setup](https://docs.microsoft.com/en-us/cli/azure/create-an-azure-service-principal-azure-cli?toc=%2Fazure%2Fazure-resource-manager%2Ftoc.json&view=azure-cli-latest).
 
  1. Ansible control host setup:
-    Register the ansible control host used for this deployment with valid RedHat subscription thats able to pull down ansible     2.5 or manually install ansible 2.5 along with atomic-openshift-utils.  To quickly create a VM using Vagrant try out [vagrant-rhel](https://github.com/hornjason/vagrant-rhel).
+    Register the ansible control host used for this deployment with valid RedHat subscription thats able to pull down ansible 2.6 or manually install ansible 2.6 along with atomic-openshift-utils.  To quickly create a VM using Vagrant try out [vagrant-rhel](https://github.com/hornjason/vagrant-rhel).
 ```
     sudo subscription-manager register --username < username > --password < password >
     sudo subscription-manager attach --pool < pool_id >
@@ -53,10 +53,10 @@ A few Pre-Reqs need to be met and are documented in the Reference Architecture a
     --enable="rhel-7-server-ose-3.11-rpms" \
     --enable="rhel-7-fast-datapath-rpms" \
     --enable="rhel-7-server-ansible-2.6-rpms"
-
+    
     sudo yum -y install ansible atomic-openshift-utils git
 
-As of now a fix for deployging multiple OCS clusters is only available by cloning and using the latest release-3.10 branch from https://github.com/openshift/openshift-ansible.git
+As of now a fix for deploying multiple OCS clusters is only available by cloning and using the latest release-3.11 branch from https://github.com/openshift/openshift-ansible.git
 ```
 
  2. Clone this repository
@@ -78,7 +78,6 @@ As of now a fix for deployging multiple OCS clusters is only available by clonin
   cp vars.yml.example vars.yml
   ```
  7. Fill out required variables below.
- 8. Due to bug https://github.com/ansible/ansible/issues/40332 if the ansible control host used to deploy from has LANG set to something other than `en` then you must  `unset LANG`
 
 ## Required Variables
 Most defaults are specified in `role/azure/defaults/main.yml`,  Sensitive information is left out and should be entered in `vars.yml`.  Below are required variables that should be filled in before deploying.
@@ -110,11 +109,11 @@ Optional Variables:
  - **vnet_cidr**: - Can customize as needed, ex `"10.0.0.0/16"`
 By Default the HTPasswdPasswordIdentityProvider is used but can be customized,  this will be templated out to the ansible hosts file.  By default htpasswd user is added.
 - **openshift_master_htpasswd_users**: - Contains the user: < passwd hash generated from htpasswd -n user >
-- **deploy_cns**: true
-- **deploy_cns_to_infra**: true  - This should always be 'True' if depoy_cns is 'True', no longer create separate CNS nodes
-- **deploy_metrics**: true
-- **deploy_logging**: true
-- **deploy_prometheus**: true
+- **deploy_cns**: false
+- **deploy_cns_on_infra**: true  - This should always be 'True' if depoy_cns is 'True', no longer create separate CNS nodes
+- **deploy_metrics**: false - This is included per default in 3.11 version
+- **deploy_logging**: false - This is included per default in 3.11 version
+- **deploy_prometheus**: false - This is included per default in 3.11 version
 - **metrics_volume_size**: '20Gi'
 - **logging_volume_size**: '100Gi'
 - **prometheus_volume_size**: '20Gi'
@@ -126,4 +125,4 @@ After all pre-reqs are met and required variables have been filled out the deplo
 The ansible control host running the deployment will be setup to use ssh proxy through the bastion in order to reach all nodes.  The openshift inventory `hosts` file will be templated into the project root directory and used for the Installation.  
 
 ## Destroy
-`ansible-playbook destroy.yml -e@vars.yml`
+`ansible-playbook destroy.yml -e @vars.yml`

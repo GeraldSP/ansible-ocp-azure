@@ -7,11 +7,6 @@
       - rhel-7-server-extras-rpms
       - rhel-7-server-ose-3.11-rpms
       - rhel-7-server-ansible-2.6-rpms
-    rhsm_repos_disable:
-      - rhel-7-server-htb-rpms
-      - rhel-7-server-ose-3.9-rpms
-      - rhel-7-server-ose-3.10-rpms
-      - rhel-7-fast-datapath-rpms
     message: |
       This host is now setup, next steps are
         Login
@@ -23,10 +18,6 @@
         Edit vars.yml
         - vi vars.yml
   tasks:
-    - name: Setup | Disable RHSM repositories
-      rhsm_repository:
-        name: "{{ rhsm_repos_disable }}"
-        state: disabled
 
     - name: Setup | Enable RHSM repositories
       rhsm_repository:

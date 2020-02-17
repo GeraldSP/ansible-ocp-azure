@@ -352,13 +352,13 @@ ocp-master-{{ i }}
 
 [nodes]
 {% for i in master_nodes %}
-ocp-master-{{ i }} openshift_node_group_name='node-config-master' openshift_schedulable=true openshift_hostname=ocp-master-{{ i }} openshift_node_labels="{'region': 'master'}"
+ocp-master-{{ i }} openshift_node_group_name='node-config-master' openshift_schedulable=true 
 {% endfor %}
 {% for i in infra_nodes %}
-ocp-infra-{{ i }}  openshift_node_group_name='node-config-infra' openshift_hostname=ocp-infra-{{ i }} openshift_node_labels="{'region': 'infra'}"
+ocp-infra-{{ i }}  openshift_node_group_name='node-config-infra' 
 {% endfor %}
 {% for i in app_nodes %}
-ocp-app-{{ i }}    openshift_node_group_name='node-config-compute' openshift_hostname=ocp-app-{{ i }} openshift_node_labels="{'region': 'apps'}"
+ocp-app-{{ i }}    openshift_node_group_name='node-config-compute' 
 {% endfor %}
 
 {% if deploy_cns | default(true) | bool  and deploy_cns is defined %}
