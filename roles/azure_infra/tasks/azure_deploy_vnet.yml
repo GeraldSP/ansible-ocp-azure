@@ -1,0 +1,130 @@
+---
+- name: Gather information ID from vnet and subnets(Ansible managed)
+  block:
+    - name: Azure | Manage vNet
+      azure_rm_virtualnetwork:
+        name: "{{ vnet_name }}"
+        resource_group: "{{ rg }}"
+        address_prefixes_cidr:
+            - "{{ vnet_cidr }}"
+
+    - name: Azure | Manage Master subnet
+      azure_rm_subnet:
+        name: master_subnet
+        state: "{{ state }}"
+        virtual_network_name: "{{ vnet_name }}"
+        resource_group: "{{ rg }}"
+        address_prefix_cidr: "{{ master_subnet_cidr }}"
+
+    - name: Azure | Manage Infra subnet
+      azure_rm_subnet:
+        name: infra_subnet
+        state: "{{ state }}"
+        virtual_network_name: "{{ vnet_name }}"
+        resource_group: "{{ rg }}"
+        address_prefix_cidr: "{{ infra_subnet_cidr }}"
+
+    # only create if deploying CNS on separate nodes
+    - name: Azure | Manage CNS subnet
+      azure_rm_subnet:
+        name: cns_subnet
+        state: "{{ state }}"
+        virtual_network_name: "{{ vnet_name }}"
+        resource_group: "{{ rg }}"
+        address_prefix_cidr: "{{ cns_subnet_cidr }}"
+      when:
+        - deploy_cns | default(true) | bool
+        - not deploy_cns_on_infra | default(false) | bool
+
+    - name: Azure | Manage App subnet
+      azure_rm_subnet:
+        name: app_subnet
+        state: "{{ state }}"
+        virtual_network_name: "{{ vnet_name }}"
+        resource_group: "{{ rg }}"
+        address_prefix_cidr: "{{ app_subnet_cidr }}"
+  when: not vnet_customer_managed | default(false) | bool
+
+
+- name: Gather information ID from vnet and subnets
+  block:
+    - name: Azure | Gather custom vnet ID
+      command: >
+        az network vnet show
+          -g {{ vnet_customer_managed_resource_group }}
+          --name {{ vnet_name }}
+          --query id
+      register: vnet_customer_managed_vnet_ids
+
+    - set_fact:
+        vnet_customer_managed_vnet_id: "{{ vnet_customer_managed_vnet_ids.stdout }}"
+
+    - name: Azure | Gather custom subnet ID Master
+      command: >
+        az network vnet subnet show
+          -g {{ vnet_customer_managed_resource_group }}
+          -n {{ vnet_customer_managed_master_subnet }}
+          --vnet-name {{ vnet_name }}
+          --query id
+      register: vnet_customer_managed_master_subnet_ids
+    - set_fact:
+        vnet_customer_managed_master_subnet_id: "{{ vnet_customer_managed_master_subnet_ids.stdout }}"
+
+    - name: Azure | Gather custom subnet ID Infra
+      command: >
+        az network vnet subnet show
+          -g {{ vnet_customer_managed_resource_group }}
+          -n {{ vnet_customer_managed_infra_subnet }}
+          --vnet-name {{ vnet_name }}
+          --query id
+      register: vnet_customer_managed_infra_subnet_ids
+    - set_fact:
+        vnet_customer_managed_infra_subnet_id: "{{ vnet_customer_managed_infra_subnet_ids.stdout }}"
+
+    - name: Azure | Gather custom subnet ID APP
+      command: >
+        az network vnet subnet show
+          -g {{ vnet_customer_managed_resource_group }}
+          -n {{ vnet_customer_managed_app_subnet }}
+          --vnet-name {{ vnet_name }}
+          --query id
+      register: vnet_customer_managed_app_subnet_ids
+    - set_fact:
+        vnet_customer_managed_app_subnet_id: "{{ vnet_customer_managed_app_subnet_ids.stdout }}"
+
+    - name: Azure | Gather custom subnet ID APP
+      command: >
+        az network vnet subnet show
+          -g {{ vnet_customer_managed_resource_group }}
+          -n {{ vnet_customer_managed_app_custom_subnet }}
+          --vnet-name {{ vnet_name }}
+          --query id
+      register: vnet_customer_managed_app_custom_subnet_ids
+      when: vnet_customer_managed_app_custom_subnet is defined
+
+
+    - set_fact:
+        vnet_customer_managed_app_nonpci_subnet_id: "{{ vnet_customer_managed_app_custom_subnet_ids.stdout }}"
+      when: vnet_customer_managed_app_custom_subnet is defined
+
+
+    - name: Azure | Gather custom CNS subnet ID
+      command: >
+        az network vnet subnet show
+          -g {{ vnet_customer_managed_resource_group }}
+          -n {{ vnet_customer_managed_cns_subnet }}
+          --vnet-name {{ vnet_name }}
+          --query id
+      register: vnet_customer_managed_cns_subnet_ids
+      when:
+        - deploy_cns | default(true) | bool
+        - not deploy_cns_on_infra | default(false) | bool
+
+
+
+    - set_fact:
+        vnet_customer_managed_cns_subnet_id: "{{ vnet_customer_managed_cns_subnet_ids.stdout }}"
+      when:
+        - deploy_cns | default(true) | bool
+        - not deploy_cns_on_infra | default(false) | bool
+  when: vnet_customer_managed | default(false) | bool

@@ -1,0 +1,364 @@
+---
+- name: Azure | Manage Bastion Network Security Group
+  azure_rm_securitygroup:
+    resource_group: "{{ rg }}"
+    name: bastion-nsg
+    purge_rules: yes
+    rules:
+        - name: bastion-ssh
+          description: "SSH access from Internet"
+          protocol: Tcp
+          destination_port_range: 22
+          access: Allow
+          priority: 500
+          direction: Inbound
+
+- name: Azure | Manage Master Network Security Group
+  azure_rm_securitygroup:
+    resource_group: "{{ rg }}"
+    name: master-nsg
+    purge_rules: yes
+    rules:
+        - name: master-ssh
+          description: "SSH from bastion"
+          protocol: Tcp
+          destination_port_range: 22
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 500
+          direction: Inbound
+        - name: master-etcd
+          description: "ETCD service ports"
+          protocol: Tcp
+          destination_port_range: 2379-2380
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 525
+          direction: Inbound
+        - name: master-api
+          description: "API port"
+          protocol: Tcp
+          destination_port_range: "{{ api_port }}"
+          access: Allow
+          priority: 550
+          direction: Inbound
+        - name: master-api-lb
+          description: "API LB  port"
+          protocol: Tcp
+          destination_port_range: "{{ api_port }}"
+          access: Allow
+          priority: 575
+          direction: Inbound
+        - name: master-ocp-tcp-dns
+          description: "TCP DNS "
+          protocol: Tcp
+          destination_port_range: 8053
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 600
+          direction: Inbound
+        - name: master-ocp-tcp-fluentd
+          description: "TCP fluentd"
+          protocol: Tcp
+          destination_port_range: 24224
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 625
+          direction: Inbound
+        - name: master-node-kubelet
+          description: "Kubelet"
+          protocol: Tcp
+          destination_port_range: 10250
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 650
+          direction: Inbound
+        - name: master-node-sdn
+          description: "OpenShift SDN"
+          protocol: Udp
+          destination_port_range: 4789
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 675
+          direction: Inbound
+
+- name: Azure | Manage Infra Network Security Group
+  azure_rm_securitygroup:
+    resource_group: "{{ rg }}"
+    name: infra-node-nsg
+    purge_rules: yes
+    rules:
+        - name: infra-ssh
+          description: "SSH from bastion"
+          protocol: Tcp
+          destination_port_range: 22
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 500
+          direction: Inbound
+        - name: infra-router-http-ports
+          description: "OpenShift Router HTTP"
+          protocol: Tcp
+          destination_port_range: 80
+          source_address_prefix: AzureLoadBalancer
+          access: Allow
+          priority: 525
+          direction: Inbound
+        - name: infra-router-ports-https
+          description: "OpenShift Router HTTPS"
+          protocol: Tcp
+          destination_port_range: 443
+          source_address_prefix: AzureLoadBalancer
+          access: Allow
+          priority: 550
+          direction: Inbound
+        - name: infra-es-ports-rest
+          description: "ElasticSearch Rest Port"
+          protocol: Tcp
+          destination_port_range: 9200
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 575
+          direction: Inbound
+        - name: infra-es-port-node
+          description: "ElasticSearch Node Port"
+          protocol: Tcp
+          destination_port_range: 9300
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 600
+          direction: Inbound
+        - name: infra-node-kubelet
+          description: "Kubelet"
+          protocol: Tcp
+          destination_port_range: 10250
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 625
+          direction: Inbound
+        - name: infra-node-sdn
+          description: "OpenShift SDN"
+          protocol: Udp
+          destination_port_range: 4789
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 650
+          direction: Inbound
+        - name: infra-router-port-http-vnet
+          description: "OpenShift Router HTTP from vNet"
+          protocol: Tcp
+          destination_port_range: 80
+          access: Allow
+          priority: 675
+          direction: Inbound
+        - name: infra-router-port-https-vnet
+          description: "OpenShift Router HTTPS from vNet"
+          protocol: Tcp
+          destination_port_range: 443
+          access: Allow
+          priority: 700
+          direction: Inbound
+
+- name: Azure | Manage Node Network Security Group
+  azure_rm_securitygroup:
+    resource_group: "{{ rg }}"
+    name: node-nsg
+    purge_rules: yes
+    rules:
+        - name: node-ssh
+          description: "SSH from bastion"
+          protocol: Tcp
+          destination_port_range: 22
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 500
+          direction: Inbound
+        - name: node-kubelet
+          description: "Kubelet"
+          protocol: Tcp
+          destination_port_range: 10250
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 525
+          direction: Inbound
+        - name: node-sdn
+          description: "ElasticSearch and OCP Apps"
+          protocol: Tcp
+          destination_port_range: 4789
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 550
+          direction: Inbound
+
+# Only create this NSG if deploying CNS on separate Nodes
+- name: Azure | Manage CNS  Network Security Group
+  azure_rm_securitygroup:
+    resource_group: "{{ rg }}"
+    name: cns-nsg
+    purge_rules: yes
+    rules:
+        - name: node-ssh
+          description: "SSH from bastion"
+          protocol: Tcp
+          destination_port_range: 22
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 500
+          direction: Inbound
+        - name: node-kubelet
+          description: "Kubelet"
+          protocol: Tcp
+          destination_port_range: 10250
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 525
+          direction: Inbound
+        - name: node-sdn
+          description: "ElasticSearch and OCP Apps"
+          protocol: Tcp
+          destination_port_range: 4789
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 550
+          direction: Inbound
+        - name: gluster-ssh
+          description: "Gluster SSH"
+          protocol: Tcp
+          destination_port_range: 2222
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 575
+          direction: Inbound
+        - name: gluster-daemon
+          description: "Gluster Daemon"
+          protocol: Tcp
+          destination_port_range: 24008
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 600
+          direction: Inbound
+        - name: gluster-mgmt
+          description: "Gluster Management"
+          protocol: Tcp
+          destination_port_range: 24009
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 625
+          direction: Inbound
+        - name: gluster-client
+          description: "Gluster Clients"
+          protocol: Tcp
+          destination_port_range: 49152-49664
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 650
+          direction: Inbound
+        - name: portmap-tcp
+          description: "Portmap TCP"
+          protocol: Tcp
+          destination_port_range: 111
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 675
+          direction: Inbound
+        - name: portmap-udp
+          description: "Portmap UDP"
+          protocol: Udp
+          destination_port_range: 111
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 700
+          direction: Inbound
+        - name: gluster-iscsi
+          description: "Gluster ISCSI"
+          protocol: Tcp
+          destination_port_range: 3260
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 725
+          direction: Inbound
+        - name: gluster-block
+          description: "Gluster Blockd"
+          protocol: Tcp
+          destination_port_range: 24010
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 750
+          direction: Inbound
+  when:
+    - deploy_cns | default(true) | bool
+    - not deploy_cns_on_infra | default(false) | bool
+
+# Update Infra NSG if deploy_cns_on_infra = true
+- name: Azure | Update Infra NSG with CNS rules
+  azure_rm_securitygroup:
+    resource_group: "{{ rg }}"
+    name: infra-node-nsg
+    rules:
+        - name: gluster-ssh
+          description: "Gluster SSH"
+          protocol: Tcp
+          destination_port_range: 2222
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 725
+          direction: Inbound
+        - name: gluster-daemon
+          description: "Gluster Daemon"
+          protocol: Tcp
+          destination_port_range: 24008
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 750
+          direction: Inbound
+        - name: gluster-mgmt
+          description: "Gluster Management"
+          protocol: Tcp
+          destination_port_range: 24009
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 775
+          direction: Inbound
+        - name: gluster-client
+          description: "Gluster Clients"
+          protocol: Tcp
+          destination_port_range: 49152-49664
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 800
+          direction: Inbound
+        - name: portmap-tcp
+          description: "Portmap TCP"
+          protocol: Tcp
+          destination_port_range: 111
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 825
+          direction: Inbound
+        - name: portmap-udp
+          description: "Portmap UDP"
+          protocol: Udp
+          destination_port_range: 111
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 850
+          direction: Inbound
+        - name: gluster-iscsi
+          description: "Gluster ISCSI"
+          protocol: Tcp
+          destination_port_range: 3260
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 875
+          direction: Inbound
+        - name: gluster-block
+          description: "Gluster Blockd"
+          protocol: Tcp
+          destination_port_range: 24010
+          source_address_prefix: VirtualNetwork
+          access: Allow
+          priority: 900
+          direction: Inbound
+  when:
+    - deploy_cns | default(true) | bool
+    - deploy_cns_on_infra | default(false) | bool

@@ -3,6 +3,7 @@
 state: present
 location: eastus
 rg: "test"
+rg_label: "test"
 
 #######################
 # nodes
@@ -59,9 +60,11 @@ vm_image_id_or_urn: "RedHat:RHEL:7-RAW:latest"
 #######################
 admin_user: cloud-user
 # This will be added to each instance's authorized_keys file
+# ssh-keygen -t rsa
+# /ansibe-ocp-azure/id_rsa_azure
 admin_pubkey: 'ssh-rsa LDKJFDLKJDFLDKJDF'
 # Path for the private key which will be added to localhost ssh_config for proxying through the bastion
-admin_privkey: '~/.ssh/id_rsa'
+admin_privkey: 'id_rsa_azure'
 
 # If set, creates local users with password-less sudo on the bastion.
 #bastion_users:
@@ -75,29 +78,28 @@ admin_privkey: '~/.ssh/id_rsa'
 sp_name: devops
 # Place this in vars file that can be encrypted in root of play and not checked into SCM
 sp_secret: 'password'
-#sp_app_id: 'dfdffdfa0103'
+sp_app_id: 'dfdffdfa0103'
 
 #######################
 # RHSM
 # Username / Password or
 # Activation key / OrgId
 #######################
-rhsm_user: ''
-rhsm_pass: ''
+rhsm_user: 'user'
+rhsm_pass: 'pass'
 rhsm_key: ""
 rhsm_org: ""
 # Can specify separate pools so only Application nodes use paid subs
 # or keep the same if only using one pool
-rhsm_broker_pool: ""
-rhsm_node_pool: ""
+rhsm_broker_pool: "e576frtf"
+rhsm_node_pool: "e567ytt"
 # For openshift contakiner Storage
 rhsm_ocs_pool: ""
 rhsm_repos:
   - rhel-7-server-rpms
   - rhel-7-server-extras-rpms
-  - rhel-7-server-ose-3.10-rpms
-  - rhel-7-fast-datapath-rpms
-  - rhel-7-server-ansible-2.4-rpms
+  - rhel-7-server-ose-3.11-rpms
+  - rhel-7-server-ansible-2.6-rpms
 bastion_pkgs:
   - ansible
   - atomic-openshift-clients
@@ -128,7 +130,7 @@ vnet_customer_dns_domain: "dirtrab.cl"
 # different resource group)
 vnet_customer_managed_resource_group: 4Network
 
-# vnet_customer_managed: false
+#vnet_customer_managed: false
 vnet_name: "{{ rg }}vnet"
 vnet_cidr: "192.168.0.0/16"
 master_subnet_cidr: "192.168.0.0/27"
@@ -162,7 +164,7 @@ vnet_preserve: false
 #######################
 # DNS name for the master load balancer. If not set,
 # {{ rg }}.{{ location }}.cloudapp.azure.com will be used.
-#master_lb_dns: ""
+master_lb_dns: "ocp.example.com"
 
 # If this is set, the master load balancer will be configured as an
 # internal Azure load balancer with the given IP address as its
@@ -183,12 +185,12 @@ vnet_preserve: false
 #
 # {{ router_lb_dns_label }}.{{ location }}.cloudapp.azure.com
 #
-#router_lb_dns_label: ocpapplb1
+router_lb_dns_label: "{{rg_label}}applb1"
 
 # If this is set, application routes use this domain by default
 # instead of nip.io. This usually requires router_lb_dns_label to be
 # set, and a wildcard DNS entry to exist for *.app.example.com.
-#router_lb_default_subdomain: app.example.com
+router_lb_default_subdomain: app.example.com
 
 # If this is set, Azure creates a DNS record for the public router IP
 # address. The public router IP will change if the environment is
@@ -248,11 +250,11 @@ openshift_master_identity_providers: [{'name': 'htpasswd_auth', 'login': 'true',
 #######################
 # deploy CNS
 #######################
-deploy_cns: true
-deploy_metrics: true
-deploy_logging: true
-deploy_prometheus: true
-deploy_grafana: true
+deploy_cns: false
+deploy_metrics: false
+deploy_logging: false
+deploy_prometheus: false
+deploy_grafana: false
 
 # volume sizing defaults
 metrics_volume_size: 25

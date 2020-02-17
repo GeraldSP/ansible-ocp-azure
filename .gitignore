@@ -1,4 +1,11 @@
 **hosts
 *.retry
 vars.yml
+vars-prod.yml
 **.log
+id_rsa
+id_rsa.pub
+certificates
+certificates/*
+inventory
+inventory/*

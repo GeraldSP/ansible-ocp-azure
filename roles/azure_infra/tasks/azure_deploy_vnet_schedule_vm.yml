@@ -1,0 +1,188 @@
+---
+# availablity Sets
+- name: Azure | Manage Availability Sets
+  azure_rm_availabilityset:
+    name: "{{ item }}"
+    state: "{{ state }}"
+    location: "{{ location }}"
+    resource_group: "{{ rg }}"
+    platform_fault_domain_count: 2
+    sku: Aligned
+  loop:
+    - "ocp-master-instances"
+    - "ocp-infra-instances"
+    - "ocp-app-instances"
+
+# availablity Set for CNS Only
+- name: Azure | Manage CNS Availability Set
+  azure_rm_availabilityset:
+    name: ocp-cns-instances
+    state: "{{ state }}"
+    location: "{{ location }}"
+    resource_group: "{{ rg }}"
+    platform_fault_domain_count: 2
+    sku: Aligned
+  when:
+    - deploy_cns | default(true) | bool
+    - not deploy_cns_on_infra | default(false) | bool
+# Create VMs
+#
+# We use the CLI option "--no-wait" to create all VMs in parallel, and
+# then wait in an Ansible loop until all of them exist.
+
+# Data disks:
+# 32 GB Container Storage for emptydir, /var/lib/origin
+# 32 GB Docker VG
+# 32 GB ETCD
+- name: Azure | Schedule Master VM creation
+  command: >
+    az vm create
+    --resource-group {{ rg }}
+    --availability-set ocp-master-instances
+    --name ocp-master-{{ item }}
+    --size {{ vm_size_master }}
+    --storage-sku Standard_LRS
+    --data-disk-sizes 32 32 32
+    --nics ocp-master-{{ item }}VMNic
+    --image {{ vm_image_id_or_urn }}
+    --admin-username {{ admin_user }}
+    --authentication-type ssh
+    --ssh-dest-key-path /home/{{ admin_user }}/.ssh/authorized_keys
+    --ssh-key-value "{{ admin_pubkey }}"
+    --no-wait
+  loop: "{{ master_nodes }}"
+
+- set_fact:
+    infra_cns_size: 512
+  when:
+    - deploy_cns | default(true) | bool
+    - deploy_cns_on_infra | default(false) | bool
+
+# Data disks:
+# 64 GB Container Storage for emptydir, /var/lib/origin
+# 32 GB Docker VG
+# 512 GB Gluster brick (optional)
+- name: Azure | Schedule Infra VM creation
+  command: >
+    az vm create
+    --resource-group {{ rg }}
+    --availability-set ocp-infra-instances
+    --name ocp-infra-{{ item }}
+    --size {{ vm_size_infra }}
+    --storage-sku Standard_LRS
+    --data-disk-sizes 64 32 {{ ocs_infra_cluster_usable_storage | default('') }}
+    --nics ocp-infra-{{ item }}VMNic
+    --image {{ vm_image_id_or_urn }}
+    --admin-username {{ admin_user }}
+    --authentication-type ssh
+    --ssh-dest-key-path /home/{{ admin_user }}/.ssh/authorized_keys
+    --ssh-key-value "{{ admin_pubkey }}"
+    --no-wait
+  loop: "{{ infra_nodes }}"
+
+# Data disks:
+# 64 GB Container Storage for emptydir, /var/lib/origin
+# 32 GB Docker VG
+- name: Azure | Schedule App VM creation
+  command: >
+    az vm create
+    --resource-group {{ rg }}
+    --availability-set ocp-app-instances
+    --name ocp-app-{{ item }}
+    --size {{ vm_size_node }}
+    --storage-sku Standard_LRS
+    --data-disk-sizes 64 32 {{ ocs_app_cluster_usable_storage if (infra_nodes|length + app_nodes|length >= 6) else '' }}
+    --nics ocp-app-{{ item }}VMNic
+    --image {{ vm_image_id_or_urn }}
+    --admin-username {{ admin_user }}
+    --authentication-type ssh
+    --ssh-dest-key-path /home/{{ admin_user }}/.ssh/authorized_keys
+    --ssh-key-value "{{ admin_pubkey }}"
+    --no-wait
+  loop: "{{ app_nodes }}"
+
+
+# Data disks:
+# DEPRICATED No longer creates CNS Nodes
+# 64 GB Container Storage for emptydir, /var/lib/origin
+# 32 GB Docker VG
+# 512 GB Gluster brick
+#
+- name: Azure | Schedule CNS VM creation
+  command: >
+    az vm create
+    --resource-group {{ rg }}
+    --availability-set ocp-cns-instances
+    --name ocp-cns-{{ item }}
+    --size {{ vm_size_cns }}
+    --storage-sku Standard_LRS
+    --data-disk-sizes 64 32 512
+    --nics ocp-cns-{{ item }}VMNic
+    --image {{ vm_image_id_or_urn }}
+    --admin-username {{ admin_user }}
+    --authentication-type ssh
+    --ssh-dest-key-path /home/{{ admin_user }}/.ssh/authorized_keys
+    --ssh-key-value "{{ admin_pubkey }}"
+    --no-wait
+  loop: "{{ cns_nodes }}"
+  when:
+    - deploy_cns | default(true) | bool
+    - not deploy_cns_on_infra | default(false) | bool
+
+- name: Azure | Schedule Bastion VM creation
+  command: >
+    az vm create
+    --resource-group {{ rg }}
+    --name bastion
+    --size {{ vm_size_bastion }}
+    --storage-sku Standard_LRS
+    --nics bastion-VMNic
+    --image {{ vm_image_id_or_urn }}
+    --admin-username {{ admin_user }}
+    --authentication-type ssh
+    --ssh-dest-key-path /home/{{ admin_user }}/.ssh/authorized_keys
+    --ssh-key-value "{{ admin_pubkey }}"
+    --no-wait
+
+- name: Azure | Wait for master VM creation
+  command: az vm list -g "{{ rg }}" --query "[?provisioningState=='Succeeded'].name" -o tsv
+  register: vm_list
+  retries: 30
+  delay: 60
+  until: vm_list.stdout_lines | map("regex_search", "ocp-master-[0-9]+") | select("string") | list | length == master_nodes | length
+
+# Infra VMs
+
+- name: Azure | Wait for infra VM creation
+  command: az vm list -g "{{ rg }}" --query "[?provisioningState=='Succeeded'].name" -o tsv
+  register: vm_list
+  retries: 30
+  delay: 60
+  until: vm_list.stdout_lines | map("regex_search", "ocp-infra-[0-9]+") | select("string") | list | length == infra_nodes | length
+
+- name: Azure | Wait for app VM creation
+  command: az vm list -g "{{ rg }}" --query "[?provisioningState=='Succeeded'].name" -o tsv
+  register: vm_list
+  retries: 30
+  delay: 60
+  until: vm_list.stdout_lines | map("regex_search", "ocp-app-[0-9]+") | select("string") | list | length == app_nodes | length
+
+
+# CNS VMs
+- block:
+  - name: Azure | Wait for CNS VM creation
+    command: az vm list -g "{{ rg }}" --query "[?provisioningState=='Succeeded'].name" -o tsv
+    register: vm_list
+    retries: 30
+    delay: 60
+    until: vm_list.stdout_lines | map("regex_search", "ocp-cns-[0-9]+") | select("string") | list | length == cns_nodes | length
+  when:
+    - deploy_cns | default(true) | bool
+    - not deploy_cns_on_infra | default(false) | bool
+
+- name: Azure | Wait for bastion VM creation
+  command: az vm list -g "{{ rg }}" --query "[?provisioningState=='Succeeded'].name" -o tsv
+  register: vm_list
+  retries: 30
+  delay: 60
+  until: "'bastion' in vm_list.stdout_lines"

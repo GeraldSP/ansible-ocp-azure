@@ -7,7 +7,7 @@
     resource_group: "{{ rg }}"
     state: "{{ state }}"
     name: masterPublicIP
-    domain_name_label: "{{ rg }}"
+    domain_name_label: "{{ rg_label }}"
     allocation_method: Static
   register: master_lb_ip
   when: master_lb_private_ip is not defined
@@ -53,7 +53,7 @@
   azure_rm_publicipaddress:
     resource_group: "{{ rg }}"
     name: bastionExternalIP
-    domain_name_label: "{{ rg }}b"
+    domain_name_label: "{{ rg_label }}b"
     allocation_method: Static
   register: bastion_public_ip
   when: bastion_fqdn.stdout == ''
@@ -63,7 +63,7 @@
     resource_group: "{{ rg }}"
     state: "{{ state }}"
     name: bastionExternalIP
-    domain_name_label: "{{ rg }}b"
+    domain_name_label: "{{ rg_label }}b"
     allocation_method: Static
   register: bastion_public_ip
 

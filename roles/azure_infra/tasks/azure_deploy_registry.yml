@@ -1,0 +1,15 @@
+---
+# Registry
+- name: Azure | Manage Registry Storage Account
+  azure_rm_storageaccount:
+    resource_group: "{{ rg }}"
+    name: "{{ registry_storage_account }}"
+    state: "{{ state }}"
+    location: "{{ location }}"
+    account_type: Standard_LRS
+- shell: az storage account keys list --account-name "{{ registry_storage_account }}" \
+        --resource-group "{{ rg }}" --query "[?keyName == 'key1'].value" -o tsv
+  register: key
+
+- set_fact:
+    registry_storage_account_key: "{{ key.stdout }}"

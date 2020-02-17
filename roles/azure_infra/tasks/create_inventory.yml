@@ -1,0 +1,11 @@
+---
+- name: Azure | template ansible hosts
+  template:
+    src: hosts.j2
+    dest: hosts
+    backup: yes
+
+
+
+- name: Refresh inventory to ensure new instaces exist in inventory
+  meta: refresh_inventory

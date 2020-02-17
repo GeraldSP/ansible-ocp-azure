@@ -91,9 +91,8 @@ rhsm_ocs_pool: ""
 rhsm_repos:
   - rhel-7-server-rpms
   - rhel-7-server-extras-rpms
-  - rhel-7-server-ose-3.10-rpms
-  - rhel-7-fast-datapath-rpms
-  - rhel-7-server-ansible-2.4-rpms
+  - rhel-7-server-ose-3.11-rpms
+  - rhel-7-server-ansible-2.6-rpms
 bastion_pkgs:
   - ansible
   - openshift-ansible
@@ -213,12 +212,12 @@ openshift_master_identity_providers: [{'name': 'htpasswd_auth', 'login': 'true',
 #######################
 # deploy CNS
 #######################
-deploy_cns: true
-deploy_cns_on_infra: true
-deploy_metrics: true
-deploy_logging: true
-deploy_prometheus: true
-deploy_grafana: true
+deploy_cns: false
+deploy_cns_on_infra: false
+deploy_metrics: false
+deploy_logging: false
+deploy_prometheus: false
+deploy_grafana: false
 
 # volume sizing defaults
 metrics_volume_size: 25

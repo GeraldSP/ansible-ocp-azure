@@ -1,4 +1,10 @@
 ---
+#- debug: msg="{{app_nodes_custom_props is defined}} and {{ app_nodes_custom_props[item|string] is defined }} and {{ app_nodes_custom_props[item|string].nonpci is defined }} and {{ app_nodes_custom_props[item|string].nonpci}} all {{app_nodes_custom_props is defined and app_nodes_custom_props[item|string] is defined and app_nodes_custom_props[item|string].nonpci is defined  and app_nodes_custom_props[item|string].nonpci}}"
+#  with_items:
+#    - 3
+- debug: msg="{{app_nodes_custom_props is defined and app_nodes_custom_props[item] is defined and app_nodes_custom_props[item].nonpci is defined  and app_nodes_custom_props[item].nonpci}}"
+  loop: "{{app_nodes }}"
+
 - name: Azure | Import cloudprovider.yml
   include_tasks: cloudprovider.yml
 
@@ -8,3 +14,6 @@
 
 - name: Azure | Import bastion.yml
   include_tasks: bastion.yml
+
+- name: Azure | Import create_inventory.yml
+  include_tasks: create_inventory.yml

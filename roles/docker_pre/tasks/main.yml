@@ -1,0 +1,15 @@
+---
+- name: Find and replace
+  lineinfile:
+    dest: /etc/sysconfig/docker-network
+    regexp: "DOCKER_NETWORK_OPTIONS"
+    line: "DOCKER_NETWORK_OPTIONS=' --bip={{docker_bip}} --mtu=1450'"
+    backrefs: yes
+    state: present
+  when: docker_bip is defined
+
+
+- name: Restart Docker Service
+  service:
+    name: docker
+    state: restarted

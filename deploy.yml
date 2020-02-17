@@ -1,7 +1,17 @@
 ---
 - hosts: localhost
+  tasks:
+    - name: Setup | update required packages
+      yum:
+        name: "{{ item }}"
+        state: latest
+      loop:
+        - openshift-ansible
+
+- hosts: localhost
   roles:
-    - { role: azure_infra, tags: infra }
+    - role: azure_infra
+      tags: infra
 
 # The Azure VMs are provisioned asynchronously. It can take some time
 # until they are reachable via SSH, even after Azure reports that the
@@ -25,16 +35,17 @@
     - ocp-pre
     - ocp-deploy
 
+- hosts: nodes
+  roles:
+    - role: docker_pre
+      tags:
+        - ocp-pre
+        - docker-pre
+        - ocp-deploy
+
 - name: call openshift deploy_cluster play
   import_playbook: /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml
   tags: ocp-deploy
-
-- name: install Grafana
-  import_playbook: /usr/share/ansible/openshift-ansible/playbooks/openshift-grafana/config.yml
-  tags:
-    - logging-metrics
-    - ocp-deploy
-  when: deploy_prometheus | default(false) | bool
 
 - hosts: nodes
   roles:

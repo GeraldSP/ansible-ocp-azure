@@ -1,0 +1,99 @@
+---
+# LBs
+- name: Azure | Manage public Master LB
+  azure_rm_loadbalancer:
+    name: ocpMasterLB
+    location: "{{ location }}"
+    resource_group: "{{ rg }}"
+    frontend_ip_configurations:
+      - name: masterApiFrontend
+        public_ip_address: masterPublicIP
+    backend_address_pools:
+      - name: masterAPIBackend
+    probes:
+      - name: masterHealthProbe
+        port: "{{ api_port }}"
+        protocol: Tcp
+    load_balancing_rules:
+      - name: ocpApiHealth
+        frontend_ip_configuration: masterApiFrontend
+        backend_address_pool: masterAPIBackend
+        probe: masterHealthProbe
+        protocol: Tcp
+        frontend_port: "{{ api_port }}"
+        backend_port: "{{ api_port }}"
+        load_distribution: SourceIPProtocol
+  when: master_lb_private_ip is not defined
+
+# As of Ansible 2.5, the azure_rm_loadbalancer has no support for
+# creating an internal Azure load balancer. Use the Azure CLI instead.
+- name: Azure | Manage private Master LB
+  block:
+    - name: Azure | Create private Master LB
+      command: >
+        az network lb create
+          --resource-group {{ rg }}
+          --name ocpMasterLB
+          --location {{ location }}
+          --frontend-ip-name masterApiFrontend
+          --private-ip-address {{ master_lb_private_ip }}
+          --vnet-name {{ vnet_customer_managed_vnet_id if vnet_customer_managed | default(false) | bool else vnet_name }}
+          --subnet {{ vnet_customer_managed_master_subnet_id if vnet_customer_managed | default(false) | bool else 'master_subnet' }}
+          --public-ip-address ''
+          --backend-pool-name masterAPIBackend
+
+    - name: Azure | Create private Master LB probe
+      command: >
+        az network lb probe create
+          --resource-group {{ rg }}
+          --lb-name ocpMasterLB
+          --name masterHealthProbe
+          --protocol Tcp
+          --port {{ api_port }}
+
+    - name: Azure | Create private Master LB rule
+      command: >
+        az network lb rule create
+          --resource-group {{ rg }}
+          --lb-name ocpMasterLB
+          --name ocpApiHealth
+          --protocol Tcp
+          --frontend-port {{ api_port }}
+          --backend-port {{ api_port }}
+          --frontend-ip-name masterApiFrontend
+          --backend-pool-name masterAPIBackend
+          --probe-name masterHealthProbe
+          --load-distribution SourceIPProtocol
+  when: master_lb_private_ip is defined
+
+- name: Azure | Manage Router LB
+  azure_rm_loadbalancer:
+    name: ocpRouterLB
+    location: "{{ location }}"
+    resource_group: "{{ rg }}"
+    frontend_ip_configurations:
+      - name: routerFrontEnd
+        public_ip_address: routerPublicIP
+    backend_address_pools:
+      - name: routerBackEnd
+    probes:
+      - name: routerHealthProbe
+        port: 80
+        protocol: Tcp
+    load_balancing_rules:
+      - name: routerRule
+        frontend_ip_configuration: routerFrontEnd
+        backend_address_pool: routerBackEnd
+        probe: routerHealthProbe
+        protocol: Tcp
+        frontend_port: 80
+        backend_port: 80
+        load_distribution: SourceIPProtocol
+      - name: httpsRouterRule
+        frontend_ip_configuration: routerFrontEnd
+        backend_address_pool: routerBackEnd
+        probe: routerHealthProbe
+        protocol: Tcp
+        frontend_port: 443
+        backend_port: 443
+        load_distribution: SourceIPProtocol

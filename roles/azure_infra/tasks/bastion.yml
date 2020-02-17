@@ -3,10 +3,14 @@
 #    registry_storage_account_key: "{{  hostvars['localhost']['registry_storage_account_key'] }}"
 - name: add bastion host
   add_host:
-    name: "{{ rg }}b.{{ location }}.cloudapp.azure.com"
+    name: "{{ rg_label }}b.{{ location }}.cloudapp.azure.com"
     groups: bastions
     ansible_user: "{{ admin_user }}"
     ansible_become: True
+    ansible_ssh_private_key_file: "{{admin_privkey}}"
+
+- debug: msg="{{ groups['bastions'][0] }}"
+- debug: msg="{{ rg_label }}b.{{ location }}.cloudapp.azure.com"
 
 # The Azure VMs are provisioned asynchronously. It can take some time
 # until they are reachable via SSH, even after Azure reports that the
@@ -86,6 +90,15 @@
     src: ansible.cfg
     dest: ansible.cfg
   delegate_to: "{{ groups['bastions'][0] }}"
+
+- name: Azure | Bastion copy id_rsa
+  copy:
+    src: "{{admin_privkey}}"
+    dest: "/home/{{admin_user}}/.ssh/id_rsa"
+  delegate_to: "{{ groups['bastions'][0] }}"
+
+
+
 
 - block:
     - name: Azure | Add ocpadmin group

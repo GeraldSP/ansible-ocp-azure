@@ -39,12 +39,12 @@ rhsm_node_pool: ""
 rhsm_repos:
   - rhel-7-server-rpms
   - rhel-7-server-extras-rpms
-  - rhel-7-server-ose-3.10-rpms
+  - rhel-7-server-ose-3.11-rpms
   - rhel-7-fast-datapath-rpms
   - rhel-7-server-ansible-2.4-rpms
 bastion_pkgs:
   - ansible
-  - atomic-openshift-utils
+  - openshift-ansible
   - atomic-openshift-clients
   - git
   - tmux
@@ -79,7 +79,9 @@ vnet_preserve: false
 master_lb_public_ip: "masterExternalLB"
 
 # Name of Router LB
-router_lb_public_ip: "routerExternalLB"
+#router_lb_public_ip: "routerExternalLB"
+router_lb_public_ip: "routerPublicIP"
+
 
 #######################
 # nodes
