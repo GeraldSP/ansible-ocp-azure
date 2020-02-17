@@ -51,11 +51,9 @@ A few Pre-Reqs need to be met and are documented in the Reference Architecture a
     --enable="rhel-7-server-rpms" \
     --enable="rhel-7-server-extras-rpms" \
     --enable="rhel-7-server-ose-3.11-rpms" \
+    --enable="rhel-7-fast-datapath-rpms" \
     --enable="rhel-7-server-ansible-2.6-rpms"
-
-    sudo yum -y update
-    reboot
-
+    
     sudo yum -y install ansible atomic-openshift-utils git
 
 As of now a fix for deploying multiple OCS clusters is only available by cloning and using the latest release-3.11 branch from https://github.com/openshift/openshift-ansible.git
